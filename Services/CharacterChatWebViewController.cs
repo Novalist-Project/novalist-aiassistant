@@ -15,6 +15,7 @@ public sealed class CharacterChatWebViewController : IWebViewController, IDispos
 
     private readonly CharacterChatViewModel _vm;
     private readonly IExtensionLocalization _loc;
+    private readonly IHostServices _host;
 
     public event Action<string>? MessagePosted;
 
@@ -23,10 +24,12 @@ public sealed class CharacterChatWebViewController : IWebViewController, IDispos
         AiAssistantExtension extension,
         Func<CharacterKnowledgeService?> knowledgeAccessor)
     {
+        _host = host;
         _vm = new CharacterChatViewModel(host, extension, knowledgeAccessor);
         _loc = host.GetLocalization(extension.Id);
         _vm.PropertyChanged += OnVmPropertyChanged;
         _vm.Turns.CollectionChanged += OnTurnsChanged;
+        _host.LanguageChanged += OnLanguageChanged;
     }
 
     public async Task<string?> OnMessageAsync(string json)
@@ -80,8 +83,10 @@ public sealed class CharacterChatWebViewController : IWebViewController, IDispos
                 ["stop"] = _loc.T("characterChat.stop"),
                 ["reset"] = _loc.T("characterChat.reset"),
                 ["placeholder"] = _loc.T("characterChat.inputWatermark"),
-            }
+            }.WithPage(_loc)
         }, Json);
+
+    private void OnLanguageChanged(string language) => MessagePosted?.Invoke(Snapshot());
 
     private void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -120,6 +125,7 @@ public sealed class CharacterChatWebViewController : IWebViewController, IDispos
     {
         _vm.PropertyChanged -= OnVmPropertyChanged;
         _vm.Turns.CollectionChanged -= OnTurnsChanged;
+        _host.LanguageChanged -= OnLanguageChanged;
         _vm.Dispose();
     }
 }

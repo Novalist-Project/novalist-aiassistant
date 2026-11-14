@@ -440,7 +440,7 @@ public partial class StoryAnalysisViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            _host.PostToUI(() => ProgressText = $"Error: {ex.Message}");
+            _host.PostToUI(() => ProgressText = _loc.T("ai.error", ex.Message));
         }
         finally
         {
@@ -533,7 +533,7 @@ public partial class StoryAnalysisViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            _host.PostToUI(() => ProgressText = $"Error: {ex.Message}");
+            _host.PostToUI(() => ProgressText = _loc.T("ai.error", ex.Message));
         }
         finally
         {

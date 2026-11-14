@@ -39,6 +39,6 @@ jobs:
       - name: Check Python workers
         working-directory: novalist-aiassistant
         run: python3 -m unittest discover -s tests -p test_dictation_worker.py
-      - name: Check chat webview lifecycle
+      - name: Check webview lifecycle and reading direction
         working-directory: novalist-aiassistant
-        run: node --test tests/chat-web.test.cjs
+        run: node --test tests/chat-web.test.cjs tests/web-direction.test.cjs

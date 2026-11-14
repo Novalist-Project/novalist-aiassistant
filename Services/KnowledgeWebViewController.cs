@@ -24,6 +24,7 @@ public sealed class KnowledgeWebViewController : IWebViewController, IDisposable
     private readonly AiAssistantExtension _extension;
     private readonly IExtensionLocalization _loc;
     private CancellationTokenSource? _scanCts;
+    private string _selectedCharacterId = string.Empty;
 
     public event Action<string>? MessagePosted;
 
@@ -32,6 +33,7 @@ public sealed class KnowledgeWebViewController : IWebViewController, IDisposable
         _host = host;
         _extension = extension;
         _loc = host.GetLocalization(extension.Id);
+        _host.LanguageChanged += OnLanguageChanged;
     }
 
     public async Task<string?> OnMessageAsync(string json)
@@ -47,8 +49,8 @@ public sealed class KnowledgeWebViewController : IWebViewController, IDisposable
                 return await CharactersAsync().ConfigureAwait(false);
 
             case "selectCharacter":
-                return await ScenesAsync(root.GetProperty("characterId").GetString() ?? string.Empty)
-                    .ConfigureAwait(false);
+                _selectedCharacterId = root.GetProperty("characterId").GetString() ?? string.Empty;
+                return await ScenesAsync(_selectedCharacterId).ConfigureAwait(false);
 
             case "scan":
                 _ = RunScanAsync();
@@ -144,7 +146,7 @@ public sealed class KnowledgeWebViewController : IWebViewController, IDisposable
                 ["starting"] = _loc.T("knowledge.starting"),
                 ["stopping"] = _loc.T("knowledge.stopping"),
                 ["error"] = _loc.T("knowledge.error"),
-            }
+            }.WithPage(_loc)
         }, Json);
     }
 
@@ -285,8 +287,23 @@ public sealed class KnowledgeWebViewController : IWebViewController, IDisposable
         }
     }
 
+    private async void OnLanguageChanged(string language)
+    {
+        try
+        {
+            MessagePosted?.Invoke(await CharactersAsync().ConfigureAwait(false));
+            if (_selectedCharacterId.Length > 0)
+                MessagePosted?.Invoke(await ScenesAsync(_selectedCharacterId).ConfigureAwait(false));
+        }
+        catch (Exception ex)
+        {
+            MessagePosted?.Invoke(JsonSerializer.Serialize(new { type = "scanError", message = ex.Message }, Json));
+        }
+    }
+
     public void Dispose()
     {
+        _host.LanguageChanged -= OnLanguageChanged;
         _scanCts?.Cancel();
         _scanCts?.Dispose();
         _scanCts = null;

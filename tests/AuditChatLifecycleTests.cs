@@ -72,6 +72,37 @@ public sealed class AuditChatLifecycleTests
     }
 
     [Fact]
+    public async Task ChatPageReceivesItsDirectionAndEveryLabelWhenItHydrates()
+    {
+        using var fixture = new ChatFixture();
+        using var controller = new ChatWebViewController(fixture.Host, fixture.Extension);
+        using var document = JsonDocument.Parse((await controller.OnMessageAsync("""{"type":"hydrate"}"""))!);
+        var strings = document.RootElement.GetProperty("strings");
+        Assert.Equal("page.direction", strings.GetProperty("pageDir").GetString());
+        Assert.Equal("page.lang", strings.GetProperty("pageLang").GetString());
+        foreach (var key in new[] { "context", "previewTitle", "previewClose", "contextTooltip", "previewTooltip", "modelTooltip", "modelFromSettings", "chatBudgetTitle" })
+            Assert.True(strings.TryGetProperty(key, out _), key);
+    }
+
+    [Fact]
+    public void SwitchingLanguageRepushesTheChatPageUntilTheControllerIsDisposed()
+    {
+        using var fixture = new ChatFixture();
+        var controller = new ChatWebViewController(fixture.Host, fixture.Extension);
+        var pushes = new List<string>();
+        controller.MessagePosted += pushes.Add;
+        fixture.SwitchLanguage("ar");
+        using (var document = JsonDocument.Parse(Assert.Single(pushes)))
+        {
+            Assert.Equal("history", document.RootElement.GetProperty("type").GetString());
+            Assert.True(document.RootElement.GetProperty("strings").TryGetProperty("pageDir", out _));
+        }
+        controller.Dispose();
+        fixture.SwitchLanguage("de");
+        Assert.Single(pushes);
+    }
+
+    [Fact]
     public async Task PickedEntitiesUseOnlyPrivacyFilteredSections()
     {
         using var fixture = new ChatFixture();
@@ -299,6 +330,7 @@ public sealed class AuditChatLifecycleTests
     {
         private readonly HttpClient _http;
         private Action<ProjectInfo>? _projectLoaded;
+        private Action<string>? _languageChanged;
         public List<string> Requests { get; } = [];
         public TaskCompletionSource RequestReceived { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource ResponseReleased { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -364,12 +396,15 @@ public sealed class AuditChatLifecycleTests
                         return null;
                     case "add_ProjectLoaded": _projectLoaded += (Action<ProjectInfo>)args[0]!; return null;
                     case "remove_ProjectLoaded": _projectLoaded -= (Action<ProjectInfo>)args[0]!; return null;
+                    case "add_LanguageChanged": _languageChanged += (Action<string>)args[0]!; return null;
+                    case "remove_LanguageChanged": _languageChanged -= (Action<string>)args[0]!; return null;
                     default: throw new InvalidOperationException(method.Name);
                 }
             });
         }
 
         public void SwitchProject() => _projectLoaded?.Invoke(new ProjectInfo());
+        public void SwitchLanguage(string language) => _languageChanged?.Invoke(language);
         public void FlushUi()
         {
             while (PendingUi.TryDequeue(out var action)) action();

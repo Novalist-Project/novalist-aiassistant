@@ -1,4 +1,8 @@
 {
+  "page": {
+    "direction": "ltr",
+    "lang": "de"
+  },
   "dictation": {
     "settingsGroup": "Diktieren",
     "enabled": "Lokales Diktieren aktivieren",
@@ -55,11 +59,16 @@
     "contextThisScene": "Diese Szene",
     "contextWhereIAm": "Wo ich bin",
     "editorAssistance": "Editor-Unterstützung",
+    "error": "Fehler: {0}",
     "filterAll": "Alle",
     "filterInconsistencies": "Inkonsistenzen",
     "filterReferences": "Referenzen",
     "filterSceneStats": "Szenen-Statistik",
     "filterSuggestions": "Vorschläge",
+    "findingReference": "Referenz",
+    "findingInconsistency": "Inkonsistenz",
+    "findingSuggestion": "Vorschlag",
+    "findingSceneStats": "Szenen-Statistik",
     "minP": "Min P",
     "modelOutput": "Modellausgabe",
     "modelThinking": "Modell denkt",
@@ -96,7 +105,10 @@
     "previewClose": "Schließen",
     "previewPrompt": "Vollständiger Prompt",
     "modelLabel": "Modell",
-    "modelFromSettings": "Modell aus den Einstellungen"
+    "modelFromSettings": "Modell aus den Einstellungen",
+    "contextTooltip": "Wähle, was dem Modell mitgeteilt wird",
+    "previewTooltip": "Sieh genau, was gesendet wird",
+    "modelTooltip": "Welches Modell darauf antwortet"
   },
   "article": {
     "emptyResult": "Das Modell lieferte eine leere Zusammenfassung.",

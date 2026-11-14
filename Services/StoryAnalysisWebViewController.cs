@@ -14,14 +14,17 @@ public sealed class StoryAnalysisWebViewController : IWebViewController, IDispos
         new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
     private readonly StoryAnalysisViewModel _vm;
+    private readonly IHostServices _host;
 
     public event Action<string>? MessagePosted;
 
     public StoryAnalysisWebViewController(IHostServices host, AiAssistantExtension extension)
     {
+        _host = host;
         _vm = new StoryAnalysisViewModel(host, extension);
         _vm.PropertyChanged += OnVmPropertyChanged;
         _vm.FilteredFindings.CollectionChanged += OnFindingsChanged;
+        _host.LanguageChanged += OnLanguageChanged;
     }
 
     public Task<string?> OnMessageAsync(string json)
@@ -106,6 +109,11 @@ public sealed class StoryAnalysisWebViewController : IWebViewController, IDispos
             // so it follows the project language like the rest of the app.
             strings = new Dictionary<string, string>
             {
+                ["addToCodex"] = _vm.Loc.T("ai.addToCodex"),
+                ["findingType.reference"] = _vm.Loc.T("ai.findingReference"),
+                ["findingType.inconsistency"] = _vm.Loc.T("ai.findingInconsistency"),
+                ["findingType.suggestion"] = _vm.Loc.T("ai.findingSuggestion"),
+                ["findingType.scene_stats"] = _vm.Loc.T("ai.findingSceneStats"),
                 ["analyseChapter"] = _vm.Loc.T("ai.analyseChapter"),
                 ["analyseAll"] = _vm.Loc.T("ai.analyseAllChapters"),
                 ["analyseStory"] = _vm.Loc.T("ai.analyseWholeStory"),
@@ -119,8 +127,14 @@ public sealed class StoryAnalysisWebViewController : IWebViewController, IDispos
                 ["notAnalysed"] = _vm.Loc.T("ai.notAnalysed"),
                 ["partiallyAnalysed"] = _vm.Loc.T("ai.partiallyAnalysed"),
                 ["runToSeeFindings"] = _vm.Loc.T("ai.runToSeeFindings"),
-            }
+            }.WithPage(_vm.Loc)
         }, Json);
+
+    private void OnLanguageChanged(string language)
+    {
+        MessagePosted?.Invoke(Snapshot());
+        MessagePosted?.Invoke(Findings());
+    }
 
     private string Findings() =>
         JsonSerializer.Serialize(new
@@ -179,6 +193,7 @@ public sealed class StoryAnalysisWebViewController : IWebViewController, IDispos
     {
         _vm.PropertyChanged -= OnVmPropertyChanged;
         _vm.FilteredFindings.CollectionChanged -= OnFindingsChanged;
+        _host.LanguageChanged -= OnLanguageChanged;
         _vm.Dispose();
     }
 }

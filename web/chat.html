@@ -22,7 +22,10 @@
      what Novalist's own theme uses. */
   --on-accent: var(--nl-accent-ink, #fff);
   --warn: var(--nl-warning, #f5a623);
+  --tracking: .06em;
 }
+/* Tracking pulls cursive letters apart, so Arabic keeps its joins. */
+:root:lang(ar) { --tracking: 0; }
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
 body {
@@ -34,9 +37,10 @@ body {
 }
 #messages { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
 .msg { max-width: 85%; padding: 8px 12px; border-radius: 10px; white-space: pre-wrap; }
+.bidi { unicode-bidi: plaintext; }
 .msg.user { align-self: flex-end; background: var(--accent); color: var(--on-accent); }
 .msg.assistant { align-self: flex-start; background: var(--card); border: 1px solid var(--border); }
-.thinking { font-size: 11px; color: var(--subtle); border-left: 2px solid var(--border); padding-left: 8px; margin-bottom: 6px; }
+.thinking { font-size: 11px; color: var(--subtle); border-inline-start: 2px solid var(--border); padding-inline-start: 8px; margin-bottom: 6px; }
 #composer { display: flex; align-items: center; gap: 8px; padding: 10px; border-top: 1px solid var(--border); }
 #input {
   flex: 1; min-width: 0; resize: none; field-sizing: content; max-height: min(30vh, 12lh); font: inherit; color: var(--text);
@@ -73,14 +77,14 @@ button:disabled { opacity: .5; cursor: default; }
 }
 #budgetForm p { margin: 0; color: var(--dim); font-size: var(--nl-font-caption, 12px); }
 .ctx-group {
-  font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+  font-size: 11px; text-transform: uppercase; letter-spacing: var(--tracking);
   color: var(--dim); margin: 8px 0 2px;
 }
 .ctx-group:first-child { margin-top: 0; }
 .ctx-item { display: flex; align-items: center; gap: 6px; cursor: pointer; }
 .ctx-item:hover { color: var(--accent); }
 .badge {
-  display: inline-block; min-width: 1.4em; margin-left: 6px; padding: 0 4px;
+  display: inline-block; min-width: 1.4em; margin-inline-start: 6px; padding: 0 4px;
   border-radius: 999px; background: var(--accent); color: var(--on-accent);
   font-size: 11px; text-align: center;
 }
@@ -93,12 +97,13 @@ button:disabled { opacity: .5; cursor: default; }
 
 /* The preview floats over the conversation and scrolls without moving the composer. */
 #previewPanel table { width: 100%; border-collapse: collapse; }
-#previewPanel th, #previewPanel td { padding: 3px 6px; text-align: left; }
-#previewPanel td.num { text-align: right; font-variant-numeric: tabular-nums; }
+#previewPanel th, #previewPanel td { padding: 3px 6px; text-align: start; }
+#previewPanel td.num { text-align: end; font-variant-numeric: tabular-nums; }
 #previewPanel tr.dropped { opacity: 0.55; }
 #previewPanel pre {
   white-space: pre-wrap;
   word-break: break-word;
+  unicode-bidi: plaintext;
   font-family: var(--nl-font-mono, ui-monospace, monospace);
   font-size: inherit;
   margin: var(--nl-space-sm, 8px) 0 0;
@@ -111,9 +116,10 @@ button:disabled { opacity: .5; cursor: default; }
 #model { display: flex; align-items: center; justify-content: space-between; gap: var(--nl-space-md, 12px); }
 #model::after { content: ''; width: 6px; height: 6px; border: solid currentColor; border-width: 0 1px 1px 0; transform: rotate(45deg); }
 #modelMenu:popover-open { display: grid; gap: var(--nl-space-tightest, 4px); }
-.model-option { text-align: left; background: transparent; color: var(--text); }
+.model-option { text-align: start; background: transparent; color: var(--text); }
 .model-option:hover, .model-option:focus-visible { background: var(--bg); }
 .model-option[aria-checked="true"] { background: color-mix(in srgb, var(--accent) 18%, var(--card)); color: var(--text); box-shadow: inset 3px 0 var(--accent); }
+.model-option[aria-checked="true"]:dir(rtl) { box-shadow: inset -3px 0 var(--accent); }
 </style>
 </head>
 <body>
@@ -136,12 +142,12 @@ button:disabled { opacity: .5; cursor: default; }
 <div id="modelMenu" class="chat-popover" popover="auto" role="menu" aria-labelledby="model" hidden></div>
 <div id="composer">
   <button id="contextToggle" class="secondary" aria-expanded="false" aria-controls="context" aria-haspopup="dialog"
-          data-i18n="context" title="Choose what the model is told">Context<span
+          data-i18n="context" data-i18n-title="contextTooltip" title="Choose what the model is told">Context<span
           id="contextCount" class="badge" hidden></span></button>
   <textarea id="input" rows="1" data-i18n-ph="placeholder" placeholder="Ask about your story..."></textarea>
-  <button id="model" type="button" class="secondary" title="Which model answers this" aria-haspopup="menu" aria-expanded="false" aria-controls="modelMenu" hidden><span id="modelLabel"></span></button>
+  <button id="model" type="button" class="secondary" data-i18n-title="modelTooltip" title="Which model answers this" aria-haspopup="menu" aria-expanded="false" aria-controls="modelMenu" hidden><span id="modelLabel"></span></button>
   <button id="preview" class="secondary" data-i18n="previewTitle" aria-expanded="false" aria-controls="previewPanel" aria-haspopup="dialog"
-          title="See exactly what will be sent">Preview</button>
+          data-i18n-title="previewTooltip" title="See exactly what will be sent">Preview</button>
   <button id="send" data-i18n="send">Send</button>
   <button id="cancel" class="secondary" data-i18n="stop" hidden>Stop</button>
   <button id="reset" class="secondary" data-i18n="clear">Clear</button>
@@ -157,6 +163,7 @@ function tf(key, fallback, ...args) {
 function applyStrings(map) {
   if (!map) return;
   S = { ...S, ...map };
+  applyDirection(S);
   for (const el of document.querySelectorAll('[data-i18n]')) {
     const v = S[el.getAttribute('data-i18n')];
     if (v) el.textContent = v;
@@ -165,6 +172,26 @@ function applyStrings(map) {
     const v = S[el.getAttribute('data-i18n-ph')];
     if (v) el.setAttribute('placeholder', v);
   }
+  for (const el of document.querySelectorAll('[data-i18n-title]')) {
+    const v = S[el.getAttribute('data-i18n-title')];
+    if (v) el.setAttribute('title', v);
+  }
+}
+function applyDirection(strings) {
+  if (!strings.pageDir) return;
+  document.documentElement.dir = strings.pageDir === 'rtl' ? 'rtl' : 'ltr';
+  if (strings.pageLang) document.documentElement.lang = strings.pageLang;
+}
+// An element with no letter in it (empty, digits only) would resolve dir="auto"
+// to left-to-right, so it keeps the page direction until a letter arrives.
+const LETTER = /\p{L}/u;
+const RTL_LETTER = /[\p{sc=Arab}\p{sc=Hebr}\p{sc=Syrc}\p{sc=Thaa}\p{sc=Nkoo}]/u;
+function followScript(el, text) {
+  const first = text.match(LETTER);
+  el.dir = first ? (RTL_LETTER.test(first[0]) ? 'rtl' : 'ltr') : '';
+}
+function bidiClass(text) {
+  return LETTER.test(text) ? ' bidi' : '';
 }
 const messagesEl = document.getElementById('messages');
 const modelSelect = document.getElementById('model');
@@ -187,6 +214,12 @@ const cancelBtn = document.getElementById('cancel');
 const resetBtn = document.getElementById('reset');
 let streamEl = null;
 let previewRequestId = 0;
+let lastModels = null;
+
+function setInput(value) {
+  inputEl.value = value;
+  followScript(inputEl, value);
+}
 
 function hidePanel(panel) {
   panel.hidePopover();
@@ -262,10 +295,11 @@ function post(msg) {
 
 function addMessage(role, text, thinking) {
   const el = document.createElement('div');
-  el.className = 'msg ' + role;
+  el.className = 'msg ' + role + bidiClass(text + (thinking || ''));
   if (thinking) {
     const th = document.createElement('div');
     th.className = 'thinking';
+    followScript(th, thinking);
     th.textContent = thinking;
     el.appendChild(th);
   }
@@ -308,7 +342,9 @@ function renderStream() {
   if (!streamFrame) streamFrame = requestAnimationFrame(() => {
     streamFrame = 0;
     if (!streamEl) return;
-    streamEl.textContent = (thinkingText ? '[' + thinkingText + ']\n' : '') + responseText;
+    const shown = (thinkingText ? '[' + thinkingText + ']\n' : '') + responseText;
+    streamEl.textContent = shown;
+    streamEl.className = 'msg assistant' + bidiClass(shown);
     messagesEl.scrollTop = messagesEl.scrollHeight;
   });
 }
@@ -326,7 +362,7 @@ window.addEventListener('message', (event) => {
     responseText = msg.streamingResponse || '';
     thinkingText = msg.streamingThinking || '';
     if (msg.reset) {
-      inputEl.value = '';
+      setInput('');
       hidePanel(previewPanel);
       hidePanel(contextEl);
       previewRequestId++;
@@ -338,12 +374,13 @@ window.addEventListener('message', (event) => {
     for (const m of msg.messages) addMessage(m.role, m.text, m.thinking);
     updateComposer();
     renderStream();
+    if (lastModels) drawModels(lastModels);
     if (!contextEl.hidden) post({ type: 'contextOptions' });
   } else if (msg.type === 'message') {
     if (streamEl) { streamEl.remove(); streamEl = null; }
     if (msg.role === 'user') {
       sendPending = false;
-      if (inputEl.value.trim() === msg.text) inputEl.value = '';
+      if (inputEl.value.trim() === msg.text) setInput('');
       updateComposer();
     }
     addMessage(msg.role, msg.text, msg.thinking);
@@ -363,7 +400,7 @@ window.addEventListener('message', (event) => {
     addMessage('notice', msg.text);
   } else if (msg.type === 'sendRejected') {
     sendPending = false;
-    if (!inputEl.value) inputEl.value = msg.text;
+    if (!inputEl.value) setInput(msg.text);
     if (msg.error) addMessage('error', msg.error);
     updateComposer();
   } else if (msg.type === 'sendAccepted') {
@@ -390,6 +427,7 @@ window.addEventListener('message', (event) => {
  * single hard paragraph without a trip to Settings and back.
  */
 function drawModels(p) {
+  lastModels = p;
   const models = p.models || [];
   modelMenu.textContent = '';
   if (models.length === 0) {
@@ -582,6 +620,7 @@ resetBtn.addEventListener('click', () => {
   messagesEl.textContent = '';
   post({ type: 'reset' });
 });
+inputEl.addEventListener('input', () => followScript(inputEl, inputEl.value));
 inputEl.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
 });

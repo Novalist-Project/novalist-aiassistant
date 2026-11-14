@@ -1,4 +1,8 @@
 {
+  "page": {
+    "direction": "ltr",
+    "lang": "en"
+  },
   "dictation": {
     "settingsGroup": "Dictation",
     "enabled": "Enable local dictation",
@@ -55,11 +59,16 @@
     "contextThisScene": "This scene",
     "contextWhereIAm": "Where I am",
     "editorAssistance": "Editor Assistance",
+    "error": "Error: {0}",
     "filterAll": "All",
     "filterInconsistencies": "Inconsistencies",
     "filterReferences": "References",
     "filterSceneStats": "Scene Stats",
     "filterSuggestions": "Suggestions",
+    "findingReference": "Reference",
+    "findingInconsistency": "Inconsistency",
+    "findingSuggestion": "Suggestion",
+    "findingSceneStats": "Scene stats",
     "minP": "Min P",
     "modelOutput": "Model output",
     "modelThinking": "Model thinking",
@@ -96,7 +105,10 @@
     "previewClose": "Close",
     "previewPrompt": "Full prompt",
     "modelLabel": "Model",
-    "modelFromSettings": "Model from Settings"
+    "modelFromSettings": "Model from Settings",
+    "contextTooltip": "Choose what the model is told",
+    "previewTooltip": "See exactly what will be sent",
+    "modelTooltip": "Which model answers this"
   },
   "article": {
     "emptyResult": "The model returned an empty summary.",

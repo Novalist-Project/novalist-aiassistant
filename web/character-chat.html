@@ -81,9 +81,23 @@ function t(key, fallback) { return S[key] || fallback || ''; }
 function tf(key, fallback, ...args) {
   return t(key, fallback).replace(/\{(\d+)\}/g, (m, i) => args[Number(i)] ?? m);
 }
+function applyDirection(strings) {
+  if (!strings.pageDir) return;
+  document.documentElement.dir = strings.pageDir === 'rtl' ? 'rtl' : 'ltr';
+  if (strings.pageLang) document.documentElement.lang = strings.pageLang;
+}
+// An element with no letter in it (empty, digits only) would resolve dir="auto"
+// to left-to-right, so it keeps the page direction until a letter arrives.
+const LETTER = /\p{L}/u;
+const RTL_LETTER = /[\p{sc=Arab}\p{sc=Hebr}\p{sc=Syrc}\p{sc=Thaa}\p{sc=Nkoo}]/u;
+function followScript(el, text) {
+  const first = String(text ?? '').match(LETTER);
+  el.dir = first ? (RTL_LETTER.test(first[0]) ? 'rtl' : 'ltr') : '';
+}
 function applyStrings(map) {
   if (!map) return;
   S = map;
+  applyDirection(S);
   for (const el of document.querySelectorAll('[data-i18n]')) {
     const v = S[el.getAttribute('data-i18n')];
     if (v) el.textContent = v;
@@ -112,6 +126,7 @@ function addTurn(speaker, text, isCharacter) {
   sp.textContent = speaker;
   el.appendChild(sp);
   el.appendChild(document.createTextNode(text));
+  followScript(el, text);
   turnsEl.appendChild(el);
   turnsEl.scrollTop = turnsEl.scrollHeight;
 }
@@ -151,6 +166,7 @@ window.addEventListener('message', (event) => {
         turnsEl.appendChild(streamEl);
       }
       streamEl.textContent = msg.streaming;
+      followScript(streamEl, msg.streaming);
       turnsEl.scrollTop = turnsEl.scrollHeight;
     }
     if (!msg.isGenerating && streamEl) { streamEl.remove(); streamEl = null; }
@@ -164,12 +180,14 @@ function send() {
   const text = inputEl.value.trim();
   if (!text) return;
   inputEl.value = '';
+  followScript(inputEl, '');
   post({ type: 'send', text });
 }
 
 sendBtn.addEventListener('click', send);
 cancelBtn.addEventListener('click', () => post({ type: 'cancel' }));
 resetBtn.addEventListener('click', () => { turnsEl.textContent = ''; post({ type: 'reset' }); });
+inputEl.addEventListener('input', () => followScript(inputEl, inputEl.value));
 inputEl.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
 });

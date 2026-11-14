@@ -39,6 +39,7 @@ public sealed partial class ChatWebViewController : IWebViewController, IDisposa
         _vm.PropertyChanged += OnVmPropertyChanged;
         _vm.Messages.CollectionChanged += OnMessagesChanged;
         _host.ProjectLoaded += OnProjectLoaded;
+        _host.LanguageChanged += OnLanguageChanged;
     }
 
     public async Task<string?> OnMessageAsync(string json)
@@ -140,6 +141,26 @@ public sealed partial class ChatWebViewController : IWebViewController, IDisposa
         }, Json);
     }
 
+    private Dictionary<string, string> PageChromeStrings() => new Dictionary<string, string>(PreviewStrings())
+    {
+        ["send"] = _loc.T("ai.send"),
+        ["stop"] = _loc.T("ai.stop"),
+        ["clear"] = _loc.T("ai.clearChat"),
+        ["placeholder"] = _loc.T("ai.chatPlaceholder"),
+        ["context"] = _loc.T("ai.context"),
+        ["contextTooltip"] = _loc.T("ai.contextTooltip"),
+        ["previewTooltip"] = _loc.T("ai.previewTooltip"),
+        ["modelTooltip"] = _loc.T("ai.modelTooltip"),
+        ["modelFromSettings"] = _loc.T("ai.modelFromSettings"),
+        ["contextAddAll"] = _loc.T("ai.contextAddAll"),
+        ["chatBudgetTitle"] = _loc.T("ai.chatBudgetTitle"),
+        ["chatBudgetContext"] = _loc.T("settings.aiContextBudget"),
+        ["chatBudgetLength"] = _loc.T("settings.aiContextLength"),
+        ["chatBudgetHelp"] = _loc.T("ai.chatBudgetHelp"),
+        ["chatBudgetApply"] = _loc.T("ai.chatBudgetApply"),
+        ["chatBudgetSummary"] = _loc.T("ai.chatBudgetSummary"),
+    }.WithPage(_loc);
+
     private Dictionary<string, string> PreviewStrings() => new()
     {
         ["previewTitle"] = _loc.T("ai.previewTitle"),
@@ -183,12 +204,7 @@ public sealed partial class ChatWebViewController : IWebViewController, IDisposa
         streamingThinking = _vm.StreamingThinking,
         messages = _vm.Messages.Select(message => new
             { role = message.Role, text = message.Content, thinking = message.Thinking }).ToArray(),
-        strings = new Dictionary<string, string>
-        {
-            ["send"] = _loc.T("ai.send"), ["stop"] = _loc.T("ai.stop"),
-            ["previewLoading"] = _loc.T("ai.previewLoading"),
-            ["clear"] = _loc.T("ai.clearChat"), ["placeholder"] = _loc.T("ai.chatPlaceholder")
-        }
+        strings = PageChromeStrings()
     }, Json);
 
     private async Task<string?> ContextOptionsAsync(int generation)
@@ -349,6 +365,12 @@ public sealed partial class ChatWebViewController : IWebViewController, IDisposa
 
     private void OnProjectLoaded(ProjectInfo project) => Interlocked.Increment(ref _generation);
 
+    private void OnLanguageChanged(string language)
+    {
+        if (Volatile.Read(ref _disposed) != 0) return;
+        MessagePosted?.Invoke(History());
+    }
+
     private static string Strip(string html)
     {
         var withBreaks = System.Text.RegularExpressions.Regex.Replace(
@@ -404,6 +426,7 @@ public sealed partial class ChatWebViewController : IWebViewController, IDisposa
         if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
         Interlocked.Increment(ref _generation);
         _host.ProjectLoaded -= OnProjectLoaded;
+        _host.LanguageChanged -= OnLanguageChanged;
         _vm.PropertyChanged -= OnVmPropertyChanged;
         _vm.Messages.CollectionChanged -= OnMessagesChanged;
         _vm.Dispose();

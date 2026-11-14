@@ -206,7 +206,7 @@ For Ollama, select **Ollama**, keep `http://localhost:11434/v1` (or enter your s
 
 ### Localization
 
-The extension ships with English and German translations. The UI language follows your Novalist language setting automatically.
+The extension ships with English, German and Arabic translations. The UI language follows your Novalist language setting automatically. With Arabic, the extension's views (AI Chat, Character Chat, Story Analysis and Character Knowledge) switch to right-to-left layout; your own text and the model's replies keep their own direction paragraph by paragraph, whatever the interface language.
 
 ## Installation
 

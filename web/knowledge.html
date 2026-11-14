@@ -22,7 +22,10 @@
      what Novalist's own theme uses. */
   --on-accent: var(--nl-accent-ink, #fff);
   --warn: var(--nl-warning, #f5a623);
+  --tracking: .06em;
 }
+/* Tracking pulls cursive letters apart, so Arabic keeps its joins. */
+:root:lang(ar) { --tracking: 0; }
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
 body {
@@ -43,11 +46,11 @@ button {
 }
 button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 button:disabled { opacity: .5; cursor: default; }
-#progress { font-size: 12px; color: var(--subtle); margin-left: auto; }
+#progress { font-size: 12px; color: var(--subtle); margin-inline-start: auto; }
 #body { flex: 1; display: flex; min-height: 0; }
 #people {
   width: 230px; flex-shrink: 0; overflow-y: auto;
-  border-right: 1px solid var(--border); padding: 8px;
+  border-inline-end: 1px solid var(--border); padding: 8px;
 }
 .person {
   padding: 8px 10px; border-radius: 8px; cursor: pointer;
@@ -68,10 +71,10 @@ button:disabled { opacity: .5; cursor: default; }
 .scene .absent { color: var(--warn); font-size: 11px; }
 .field { margin-top: 8px; }
 .field .lbl {
-  font-size: 10px; text-transform: uppercase; letter-spacing: .06em;
+  font-size: 10px; text-transform: uppercase; letter-spacing: var(--tracking);
   color: var(--subtle);
 }
-.field ul { margin: 2px 0 0; padding-left: 18px; color: var(--dim); }
+.field ul { margin: 2px 0 0; padding-inline-start: 18px; color: var(--dim); }
 .meta { font-size: 11px; color: var(--subtle); margin-top: 8px; }
 .empty { color: var(--subtle); padding: 16px; }
 </style>
@@ -94,9 +97,31 @@ function t(key, fallback) { return S[key] || fallback || ''; }
 function tf(key, fallback, ...args) {
   return t(key, fallback).replace(/\{(\d+)\}/g, (m, i) => args[Number(i)] ?? m);
 }
+function applyDirection(strings) {
+  if (!strings.pageDir) return;
+  document.documentElement.dir = strings.pageDir === 'rtl' ? 'rtl' : 'ltr';
+  if (strings.pageLang) document.documentElement.lang = strings.pageLang;
+}
+// An element with no letter in it (empty, digits only) would resolve dir="auto"
+// to left-to-right, so it keeps the page direction until a letter arrives.
+const LETTER = /\p{L}/u;
+const RTL_LETTER = /[\p{sc=Arab}\p{sc=Hebr}\p{sc=Syrc}\p{sc=Thaa}\p{sc=Nkoo}]/u;
+function followScript(el, text) {
+  const first = String(text ?? '').match(LETTER);
+  el.dir = first ? (RTL_LETTER.test(first[0]) ? 'rtl' : 'ltr') : '';
+}
+// A name or title in a row keeps the row's direction, so the list stays aligned
+// with the interface, and is isolated so its own script reads in the right order.
+function isolate(el, text) {
+  const part = document.createElement('bdi');
+  part.textContent = text;
+  followScript(part, text);
+  el.appendChild(part);
+}
 function applyStrings(map) {
   if (!map) return;
   S = map;
+  applyDirection(S);
   for (const el of document.querySelectorAll('[data-i18n]')) {
     const v = S[el.getAttribute('data-i18n')];
     if (v) el.textContent = v;
@@ -131,7 +156,7 @@ function renderCharacters(list) {
     row.className = 'person' + (c.id === selectedId ? ' active' : '');
     const nm = document.createElement('div');
     nm.className = 'nm';
-    nm.textContent = c.name;
+    isolate(nm, c.name);
     const cnt = document.createElement('div');
     cnt.className = 'cnt';
     // Distinguish "not scanned" from "scanned, not in any scene" — very
@@ -172,12 +197,12 @@ function renderScenes(scenes) {
     const sum = document.createElement('summary');
     const st = document.createElement('span');
     st.className = 'st';
-    st.textContent = s.sceneTitle || t('untitledScene','(untitled scene)');
+    isolate(st, s.sceneTitle || t('untitledScene','(untitled scene)'));
     sum.appendChild(st);
     if (s.chapterTitle) {
       const ch = document.createElement('div');
       ch.className = 'ch';
-      ch.textContent = s.chapterTitle;
+      isolate(ch, s.chapterTitle);
       sum.appendChild(ch);
     }
     if (!s.present) {
@@ -197,7 +222,7 @@ function renderScenes(scenes) {
       const ul = document.createElement('ul');
       for (const v of f.values) {
         const li = document.createElement('li');
-        li.textContent = v;
+        isolate(li, v);
         ul.appendChild(li);
       }
       wrap.append(lbl, ul);

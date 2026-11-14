@@ -27,7 +27,7 @@ public sealed partial class ContextBudgetSettingsTests : IDisposable
             "WriteHostDataAsync" => Task.CompletedTask,
             "get_CurrentLanguageDisplayName" => "English",
             "GetAiHooks" => Array.Empty<Novalist.Sdk.Hooks.IAiHook>(),
-            "add_ProjectLoaded" or "remove_ProjectLoaded" => null,
+            "add_ProjectLoaded" or "remove_ProjectLoaded" or "add_LanguageChanged" or "remove_LanguageChanged" => null,
             _ => throw new InvalidOperationException(method.Name)
         });
         SetField("_host", _host);
