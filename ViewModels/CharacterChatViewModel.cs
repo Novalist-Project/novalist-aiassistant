@@ -227,10 +227,10 @@ public partial class CharacterChatViewModel : ObservableObject, IDisposable
             _history.Add(new AiChatMessage { Role = "assistant", Content = result.Response });
             Turns.Add(new CharacterChatTurn(character.DisplayName, result.Response, true));
         }
-        catch (OperationCanceledException) { }
+        catch (OperationCanceledException) { /* The writer pressed Stop; that is not an error to show. */ }
         catch (Exception ex)
         {
-            Turns.Add(new CharacterChatTurn(_loc.T("characterChat.errorLabel"), ex.Message, false));
+            Turns.Add(new CharacterChatTurn(_loc.T("characterChat.errorLabel"), AiProviderErrors.Describe(ex, _loc), false));
         }
         finally
         {

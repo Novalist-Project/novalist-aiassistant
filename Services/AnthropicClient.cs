@@ -146,12 +146,10 @@ public sealed class AnthropicClient
             .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token)
             .ConfigureAwait(false);
 
-        if (!response.IsSuccessStatusCode)
-        {
-            var body = await response.Content.ReadAsStringAsync(token).ConfigureAwait(false);
-            throw new InvalidOperationException(
-                $"Anthropic API returned {(int)response.StatusCode}: {Summarize(body)}");
-        }
+        // Same classification as the OpenAI-compatible path: a 429 here is a
+        // rate limit, an empty credit balance comes back as a 400, and 529
+        // means the API is overloaded.
+        await AiProviderErrors.ThrowIfFailedAsync(response, "anthropic", token).ConfigureAwait(false);
 
         await using var stream = await response.Content.ReadAsStreamAsync(token).ConfigureAwait(false);
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -284,12 +282,27 @@ public sealed class AnthropicClient
                     return (null, null);
 
                 case "error":
-                    var message = root.TryGetProperty("error", out var error)
+                    // Overload and rate limits can also arrive mid-stream, after
+                    // the 200; they deserve the same explanation as a refused request.
+                    var errorType = root.TryGetProperty("error", out var error)
+                        && error.ValueKind == JsonValueKind.Object
+                        && error.TryGetProperty("type", out var typeOfError)
+                        ? typeOfError.GetString() : null;
+                    var status = errorType switch
+                    {
+                        "overloaded_error" => 529,
+                        "rate_limit_error" => 429,
+                        "api_error" => 500,
+                        _ => 0,
+                    };
+                    if (status != 0)
+                        throw AiProviderErrors.Create("anthropic", status, payload, null);
+                    var message = error.ValueKind == JsonValueKind.Object
                         && error.TryGetProperty("message", out var errorMessage)
                         ? errorMessage.GetString()
                         : null;
                     throw new InvalidOperationException(
-                        $"Anthropic API stream error: {message ?? "unknown"}");
+                        $"Anthropic API stream error: {AiProviderErrors.Shorten(message) ?? "unknown"}");
 
                 default:
                     return (null, null);
@@ -299,27 +312,5 @@ public sealed class AnthropicClient
         {
             return (null, null);
         }
-    }
-
-    /// <summary>Trims an error body to something loggable without dumping a wall
-    /// of JSON into the UI.</summary>
-    private static string Summarize(string body)
-    {
-        if (string.IsNullOrWhiteSpace(body))
-            return "(empty response)";
-
-        try
-        {
-            using var document = JsonDocument.Parse(body);
-            if (document.RootElement.TryGetProperty("error", out var error)
-                && error.TryGetProperty("message", out var message))
-                return message.GetString() ?? body;
-        }
-        catch (JsonException)
-        {
-            // Fall through to the raw body.
-        }
-
-        return body.Length > 300 ? body[..300] + "..." : body;
     }
 }

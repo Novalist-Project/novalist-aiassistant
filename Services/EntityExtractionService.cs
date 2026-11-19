@@ -75,7 +75,7 @@ public sealed class EntityExtractionService
         {
             return new EntityExtractionResult
             {
-                Error = string.Format(_loc.T("extract.failedReason"), ex.Message)
+                Error = string.Format(_loc.T("extract.failedReason"), AiProviderErrors.Describe(ex, _loc))
             };
         }
     }

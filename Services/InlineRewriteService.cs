@@ -181,7 +181,7 @@ public sealed class InlineRewriteService : IInlineActionContributor
         }
         catch (Exception ex)
         {
-            return new InlineActionResult { Error = ex.Message };
+            return new InlineActionResult { Error = AiProviderErrors.Describe(ex, _loc) };
         }
     }
 
@@ -249,7 +249,7 @@ public sealed class InlineRewriteService : IInlineActionContributor
         }
         catch (Exception ex)
         {
-            return new InlineActionResult { Error = ex.Message };
+            return new InlineActionResult { Error = AiProviderErrors.Describe(ex, _loc) };
         }
     }
 
@@ -410,7 +410,7 @@ public sealed class InlineRewriteService : IInlineActionContributor
                 sb.AppendLine();
             }
         }
-        catch { }
+        catch { /* The roster is optional context; a rewrite without it still works. */ }
 
         // Preceding scenes: up to two scenes immediately before SceneId, using
         // stored synopsis when available else trimmed plain text.
@@ -449,7 +449,7 @@ public sealed class InlineRewriteService : IInlineActionContributor
                     }
                 }
             }
-            catch { }
+            catch { /* Preceding scenes are optional context; the request goes out without them. */ }
         }
 
         return sb.ToString().Trim();

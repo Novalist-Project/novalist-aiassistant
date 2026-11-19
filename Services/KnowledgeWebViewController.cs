@@ -277,7 +277,7 @@ public sealed class KnowledgeWebViewController : IWebViewController, IDisposable
         {
             MessagePosted?.Invoke(JsonSerializer.Serialize(new
             {
-                type = "scanError", message = ex.Message,
+                type = "scanError", message = AiProviderErrors.Describe(ex, _loc),
             }, Json));
         }
         finally

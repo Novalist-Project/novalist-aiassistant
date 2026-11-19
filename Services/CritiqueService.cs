@@ -90,7 +90,7 @@ public sealed class CritiqueService
         }
         catch (Exception ex)
         {
-            return new CritiqueReport(0, 0, ex.Message);
+            return new CritiqueReport(0, 0, AiProviderErrors.Describe(ex, _loc));
         }
 
         if (findings.Count == 0)

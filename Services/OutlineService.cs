@@ -101,7 +101,7 @@ public sealed class OutlineService
         }
         catch (Exception ex)
         {
-            return new Outline([], [], ex.Message);
+            return new Outline([], [], AiProviderErrors.Describe(ex, _loc));
         }
     }
 

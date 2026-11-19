@@ -61,7 +61,7 @@ public sealed class ArticleGeneratorService
         }
         catch (Exception ex)
         {
-            return new ArticleGenerationResult { Error = string.Format(_loc.T("article.failedReason"), ex.Message) };
+            return new ArticleGenerationResult { Error = string.Format(_loc.T("article.failedReason"), AiProviderErrors.Describe(ex, _loc)) };
         }
     }
 

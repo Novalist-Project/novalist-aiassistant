@@ -2,6 +2,35 @@
 
 The AI Assistant extension connects Novalist to a local or cloud AI provider for chat, story analysis and writing assistance. Chat uses the project context you select; analysis tools use the context needed for their selected task.
 
+The extension does not include an AI model or any AI credit. Every AI feature talks to a provider you connect, and you pay that provider (or run the model yourself). See [Connect an AI provider](#connect-an-ai-provider) to set one up and [Troubleshooting provider errors](#troubleshooting-provider-errors) if requests fail.
+
+## Connect an AI provider
+
+The setup wizard runs the first time you open a project after installing the extension. To change the connection later, open **Settings → Extensions → AI Assistant** and use the **Connection** group: turn on **Enable AI features**, choose a **Provider**, fill in the fields for it, then press **Refresh** to load the models that provider offers and pick one under **Model**.
+
+Choose the kind of provider first. They are paid and authenticated differently:
+
+| You have | Choose | What to enter |
+| --- | --- | --- |
+| A local model server (free, runs on your computer) | **LM Studio** or **Ollama** | Keep the default **Base URL** (`http://localhost:1234` or `http://localhost:11434/v1`), start the server, press **Refresh**, pick a model. No API key. |
+| An API account with a cloud service | **OpenAI**, **OpenRouter**, **Groq**, **DeepSeek**, **Mistral**, **Together AI** or **xAI** | Keep the default **Base URL**, paste the service's API key into **API Token**, press **Refresh**, pick a model. |
+| Another OpenAI-compatible service or a proxy | **Custom (OpenAI-compatible)** | The service's API address as **Base URL** (usually ending in `/v1`), its API key as **API Token**, then **Refresh**. |
+| An Anthropic API account | **Anthropic API** | An API key from the Anthropic Console as **Anthropic API key**, then pick a model. |
+| A Claude Pro or Max subscription | **Claude Code CLI** | Install Claude Code and log in once in a terminal (`claude`). The extension runs the CLI and uses that login; no key is stored in Novalist. |
+| A GitHub Copilot subscription | **GitHub Copilot CLI** | Install the Copilot CLI and log in once in a terminal. The extension runs the CLI and uses that login. |
+
+A chat subscription is not API access. ChatGPT Plus or Pro does not pay for requests to the OpenAI API, and a Claude Pro or Max subscription does not pay for the Anthropic API: both APIs are billed separately, with prepaid credit or a payment method on the provider's developer platform. An API key on an account without credit can still be accepted for listing models, so **Refresh** may work while every actual request is refused. If you have a Claude subscription and no API credit, use **Claude Code CLI** instead of **Anthropic API**.
+
+## Troubleshooting provider errors
+
+When a provider refuses a request, the extension shows what the provider reported, what it means, and the provider's own message where there is one. The common cases:
+
+- **Too many requests, rate limit (HTTP 429)** — the provider limits how many requests or tokens your account may send per minute or per day. Wait and try again; if the provider says how long to wait, the message includes it. Free tiers and new accounts have low limits. Features that run in the background count too: **Enable AI grammar check** (under **Analysis Checks**) sends a request to the provider each time you pause typing while grammar checking is on in Novalist, and the first message in **Character Chat** with a scene selected sends one request for every earlier scene that has not been analysed yet, one after another, before it answers. Turn off AI grammar check or switch to a plan with higher limits if the limit keeps being reached.
+- **No API credit or quota used up (also HTTP 429, or 402)** — the account has no credit, its monthly quota is spent, or a free daily allowance is exhausted. Waiting does not help (except for a daily allowance, which resets). Add credit or a payment method on the provider's website, or choose another provider. Anthropic reports an empty balance as HTTP 400, "credit balance is too low".
+- **API key not accepted (HTTP 401 or 403)** — the key is wrong, revoked, belongs to a different service, or is not allowed to use the selected model. Paste the key again and press **Refresh**.
+- **Model or address not found (HTTP 404)** — the selected model does not exist for this account, or the **Base URL** is wrong. Press **Refresh** and pick a model from the list.
+- **Provider unavailable or overloaded (HTTP 5xx, 529)** — the problem is on the provider's side. Try again later or pick another model.
+
 ## What does this extension do?
 
 The setup wizard lets you enable **AI assistance**, **local dictation**, **both**, or **Not now**. Dictation has its own model and acceleration choices and needs no chat provider. Setup remembers your choice across restarts; reopen it from settings whenever you want to change it. You can download dictation models when finishing the wizard or later in settings.
@@ -144,7 +173,7 @@ The profile is a description, not your text: it is derived once and stored as pr
 
 Every built-in prompt here is somebody's opinion about what to say to a model, and that opinion is often wrong for a particular book — a prompt tuned for a thriller is not the one a literary novelist wants.
 
-**Settings → AI / LLM → Your own prompts** holds prompts you write, and they appear in the same editor menu as the built-in ones. The template language is deliberately tiny — substitution and nothing else:
+**Settings → Extensions → AI Assistant → Your own prompts** holds prompts you write, and they appear in the same editor menu as the built-in ones. The template language is deliberately tiny — substitution and nothing else:
 
 | Placeholder | Becomes |
 | --- | --- |
@@ -190,7 +219,7 @@ Results are displayed as filterable findings you can browse by type or scene.
 
 ### Settings & Customization
 
-All AI options are available under **Settings → AI / LLM**:
+All AI options are available under **Settings → Extensions → AI Assistant**. Setting up a provider step by step is described in [Connect an AI provider](#connect-an-ai-provider).
 
 - **Provider selection** — Choose between:
   - **LM Studio, Ollama, OpenAI, OpenRouter, Groq, DeepSeek, Mistral, Together AI or xAI** — select the service directly. Its default address appears in **Base URL**, which you can edit for a remote server or proxy. **Custom (OpenAI-compatible)** accepts other compatible endpoints. Model discovery and chat use the selected service's API; LM Studio's model loading is only used for LM Studio.

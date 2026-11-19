@@ -461,5 +461,17 @@
   "report.section.conflict": "Konflikt",
   "report.section.theme": "Thema",
   "report.section.continuity": "Kontinuität",
-  "report.section.revision": "Was zuerst zu ändern ist"
+  "report.section.revision": "Was zuerst zu ändern ist",
+  "providerError": {
+    "authentication": "{0} hat den API-Schlüssel nicht akzeptiert (HTTP {1}). Prüfe den API-Schlüssel in den Einstellungen des KI-Assistenten und ob er dieses Modell verwenden darf.",
+    "notFound": "{0} bietet das angeforderte Modell oder die Adresse nicht an (HTTP {1}). Wähle in den Einstellungen des KI-Assistenten über „Aktualisieren“ ein verfügbares Modell und prüfe die Basis-URL.",
+    "rateLimited": "{0} erhält gerade zu viele Anfragen von deinem Konto (HTTP {1}, Ratenlimit). Warte einen Moment und versuche es dann erneut. Wenn das immer wieder passiert, erlaubt dein Tarif weniger Anfragen, als diese Funktionen stellen; auch Hintergrundfunktionen wie die KI-Grammatikprüfung zählen mit.",
+    "quotaExhausted": "{0} meldet, dass dein Konto kein API-Guthaben mehr hat oder sein Kontingent aufgebraucht ist (HTTP {1}). Prüfe Tarif und Abrechnung auf der Website des Anbieters; Warten hilft hier nicht. Ein ChatGPT- oder Claude-Chat-Abo enthält kein API-Guthaben.",
+    "unavailable": "{0} ist gerade nicht erreichbar oder überlastet (HTTP {1}). Versuche es später erneut oder wähle ein anderes Modell.",
+    "rejected": "{0} hat die Anfrage abgelehnt (HTTP {1}). Prüfe das gewählte Modell und die Generierungseinstellungen.",
+    "other": "{0} hat mit einem Fehler geantwortet (HTTP {1}).",
+    "retryAfter": "Der Anbieter bittet dich, {0} Sekunden zu warten, bevor du es erneut versuchst.",
+    "retryAfterMinutes": "Der Anbieter bittet dich, etwa {0} Minuten zu warten, bevor du es erneut versuchst.",
+    "providerSays": "Meldung des Anbieters: {0}"
+  }
 }

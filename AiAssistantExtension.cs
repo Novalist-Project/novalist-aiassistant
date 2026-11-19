@@ -914,7 +914,8 @@ public sealed class AiAssistantExtension : IExtension, IStatusBarContributor, IR
                     _ = task.ContinueWith(t =>
                     {
                         if (t.Exception != null)
-                            _host.PostToUI(() => _host.ShowNotification($"Synopsis failed: {t.Exception.GetBaseException().Message}"));
+                            _host.PostToUI(() => _host.ShowNotification(string.Format(
+                                _loc.T("synopsis.failedReason"), Services.AiProviderErrors.Describe(t.Exception, _loc))));
                     }, TaskScheduler.Default);
                 }
             },

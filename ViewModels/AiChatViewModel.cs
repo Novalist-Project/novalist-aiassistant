@@ -143,7 +143,7 @@ public partial class AiChatViewModel : ObservableObject, IDisposable
         catch (Exception ex)
         {
             if (IsCurrent())
-                Messages.Add(new AiChatMessageItem("error", ex.Message));
+                Messages.Add(new AiChatMessageItem("error", AiProviderErrors.Describe(ex, _loc)));
         }
         finally
         {

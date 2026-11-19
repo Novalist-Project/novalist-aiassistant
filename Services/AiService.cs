@@ -198,7 +198,7 @@ public class AiService : IAiService
             using var req = new HttpRequestMessage(HttpMethod.Get, ModelsUrl);
             AddAuth(req);
             using var res = await _http.SendAsync(req).ConfigureAwait(false);
-            res.EnsureSuccessStatusCode();
+            await AiProviderErrors.ThrowIfFailedAsync(res, _provider, CancellationToken.None).ConfigureAwait(false);
             var json = await res.Content.ReadAsStringAsync().ConfigureAwait(false);
             using var doc = JsonDocument.Parse(json);
             var models = new List<AiModelInfo>();
@@ -305,7 +305,7 @@ public class AiService : IAiService
             using var req = new HttpRequestMessage(HttpMethod.Get, ModelsUrl);
             AddAuth(req);
             using var res = await _http.SendAsync(req, cancellationToken).ConfigureAwait(false);
-            res.EnsureSuccessStatusCode();
+            await AiProviderErrors.ThrowIfFailedAsync(res, _provider, cancellationToken).ConfigureAwait(false);
             var json = await res.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             using var doc = JsonDocument.Parse(json);
 
@@ -355,9 +355,10 @@ public class AiService : IAiService
             _ensuredModel = model;
             _ensuredContextLength = _contextLength;
         }
-        catch (Exception exception) when (exception is HttpRequestException or JsonException)
+        catch (Exception exception) when (exception is HttpRequestException or JsonException or AiProviderException)
         {
-            // Best-effort — proceed even if we can't verify load state
+            // Best-effort — proceed even if we can't verify load state; the
+            // completion request reports any real problem in its own words.
         }
         finally
         {
@@ -375,7 +376,7 @@ public class AiService : IAiService
         AddAuth(req);
         req.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
         using var res = await _http.SendAsync(req, cancellationToken).ConfigureAwait(false);
-        res.EnsureSuccessStatusCode();
+        await AiProviderErrors.ThrowIfFailedAsync(res, _provider, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task UnloadInstanceAsync(string instanceId, CancellationToken cancellationToken)
@@ -386,7 +387,7 @@ public class AiService : IAiService
             JsonSerializer.Serialize(new { instance_id = instanceId }),
             Encoding.UTF8, "application/json");
         using var res = await _http.SendAsync(req, cancellationToken).ConfigureAwait(false);
-        res.EnsureSuccessStatusCode();
+        await AiProviderErrors.ThrowIfFailedAsync(res, _provider, cancellationToken).ConfigureAwait(false);
     }
 
     // ── Chat generation with SSE streaming ──────────────────────────
@@ -404,7 +405,7 @@ public class AiService : IAiService
         double? temperature, Action<string>? onThinkingChunk, CancellationToken cancellationToken)
         => GenerateChatCoreAsync(messages, onChunk, temperature, onThinkingChunk, cancellationToken, maxOutputTokens);
 
-    private sealed record RequestOptions(string Model, int? MaxOutputTokens);
+    private sealed record RequestOptions(string Model, int? MaxOutputTokens, string Provider);
 
     private async Task<AiChatResult> GenerateChatCoreAsync(
         List<AiChatMessage> messages, Action<string>? onChunk, double? temperature,
@@ -412,7 +413,7 @@ public class AiService : IAiService
     {
         var provider = _provider;
         var model = EffectiveModel;
-        var options = new RequestOptions(model, maxOutputTokens);
+        var options = new RequestOptions(model, maxOutputTokens, provider);
         using var request = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         lock (_requestLock) _activeRequests.Add(request);
         var serial = provider is "copilot" or "claude";
@@ -466,7 +467,9 @@ public class AiService : IAiService
         req.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
 
         using var res = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
-        res.EnsureSuccessStatusCode();
+        // A refusal (429 rate limit or empty quota, 401 key, 404 model) has to
+        // reach the writer as what to do next, not as .NET's status text.
+        await AiProviderErrors.ThrowIfFailedAsync(res, options.Provider, ct).ConfigureAwait(false);
 
         using var stream = await res.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
         using var reader = new StreamReader(stream);
@@ -496,10 +499,7 @@ public class AiService : IAiService
 
                 // Check for error
                 if (root.TryGetProperty("error", out var errObj))
-                {
-                    var errMsg = errObj.TryGetProperty("message", out var em) ? em.GetString() : jsonStr;
-                    throw new InvalidOperationException($"LM Studio: {errMsg}");
-                }
+                    throw StreamError(options.Provider, errObj, jsonStr);
 
                 if (!root.TryGetProperty("choices", out var choices)
                     || choices.ValueKind != JsonValueKind.Array || choices.GetArrayLength() == 0) continue;
@@ -1152,6 +1152,23 @@ public class AiService : IAiService
     }
 
     // ── Helpers ─────────────────────────────────────────────────────
+
+    /// <summary>
+    /// An error sent inside a stream that had already answered 200. Gateways
+    /// such as OpenRouter put the HTTP status they would have used in "code";
+    /// when they do, it is explained like any other refusal.
+    /// </summary>
+    private static InvalidOperationException StreamError(string provider, JsonElement error, string payload)
+    {
+        if (error.ValueKind == JsonValueKind.Object
+            && error.TryGetProperty("code", out var code) && code.ValueKind == JsonValueKind.Number
+            && code.TryGetInt32(out var status) && status is >= 400 and <= 599)
+            return AiProviderErrors.Create(provider, status, $"{{\"error\":{error.GetRawText()}}}", null);
+        var name = AiProviders.Labels.TryGetValue(provider, out var label) ? label : provider;
+        var message = error.ValueKind == JsonValueKind.Object && error.TryGetProperty("message", out var text)
+            && text.ValueKind == JsonValueKind.String ? text.GetString() : null;
+        return new InvalidOperationException($"{name}: {AiProviderErrors.Shorten(message ?? payload)}");
+    }
 
     private void AddAuth(HttpRequestMessage req)
     {

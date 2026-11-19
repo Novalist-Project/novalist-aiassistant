@@ -90,7 +90,7 @@ public sealed class SceneSynopsisService
         catch (Exception ex)
         {
             progress.Dispose();
-            _host.ShowNotification(string.Format(_loc.T("synopsis.failedReason"), ex.Message));
+            _host.ShowNotification(string.Format(_loc.T("synopsis.failedReason"), AiProviderErrors.Describe(ex, _loc)));
             return null;
         }
     }

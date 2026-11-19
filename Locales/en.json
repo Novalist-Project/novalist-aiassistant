@@ -461,5 +461,17 @@
   "report.section.conflict": "Conflict",
   "report.section.theme": "Theme",
   "report.section.continuity": "Continuity",
-  "report.section.revision": "What to fix first"
+  "report.section.revision": "What to fix first",
+  "providerError": {
+    "authentication": "{0} did not accept the API key (HTTP {1}). Check the API key in the AI Assistant settings and that it may use this model.",
+    "notFound": "{0} does not offer the requested model or address (HTTP {1}). Press Refresh in the AI Assistant settings to pick an available model, and check the Base URL.",
+    "rateLimited": "{0} is receiving too many requests from your account right now (HTTP {1}, rate limit). Wait a moment and try again. If it keeps happening, your plan allows fewer requests than these features use; background features such as AI grammar check count too.",
+    "quotaExhausted": "{0} reports that your account has no API credit left or its quota is used up (HTTP {1}). Check your plan and billing on the provider's website; waiting will not help. A ChatGPT or Claude chat subscription does not include API credit.",
+    "unavailable": "{0} is unavailable or overloaded at the moment (HTTP {1}). Try again later or choose another model.",
+    "rejected": "{0} rejected the request (HTTP {1}). Check the selected model and the generation settings.",
+    "other": "{0} answered with an error (HTTP {1}).",
+    "retryAfter": "The provider asks you to wait {0} seconds before trying again.",
+    "retryAfterMinutes": "The provider asks you to wait about {0} minutes before trying again.",
+    "providerSays": "Message from the provider: {0}"
+  }
 }

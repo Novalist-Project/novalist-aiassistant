@@ -95,7 +95,7 @@ public sealed class StoryBibleService
             {
                 // One failed batch should not lose the work already done over the
                 // rest of the book.
-                return new BibleReport([.. found.Values], start, ex.Message);
+                return new BibleReport([.. found.Values], start, AiProviderErrors.Describe(ex, _loc));
             }
 
             foreach (var proposal in proposals) Merge(found, proposal);
